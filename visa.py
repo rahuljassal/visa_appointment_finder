@@ -155,9 +155,7 @@ def visa_appointment_check(url):
 
 
 if __name__ == "__main__":
-    global now, date_obj, Today_date, filedate
     try:
-        # Adding a logger
         # Get the current date
         now = datetime.now()
         date_obj = datetime.strftime(now, "%d-%b-%Y")
@@ -166,30 +164,32 @@ if __name__ == "__main__":
         filedate = str(Today_date)
 
         # Define the file path
-        file_path = (
-            r"/Users/rahuljassal/Documents/visa_appointment/logs/Visa_Automation_"
-            + filedate
-            + ".log"
-        )
+        log_dir = "logs"
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
 
-        # Check if the file exists
-        if not os.path.exists(file_path):
-            # Create the file if it does not exist
-            with open(file_path, "w") as f:
-                pass
+        file_path = os.path.join(log_dir, f"Visa_Automation_{filedate}.log")
 
-        # Basic Configuration for Logging mechanism
+        # Basic Configuration for Logging
         logging.basicConfig(
             filename=file_path,
             format="%(asctime)s ~ %(levelname)s - %(message)s",
             datefmt="%d-%b-%Y %H:%M:%S",
+            level=logging.INFO,
         )
-        logging.getLogger().setLevel(logging.INFO)
+
+        # Also log to console when running in GitHub Actions
+        if os.getenv("GITHUB_ACTIONS") == "true":
+            console_handler = logging.StreamHandler()
+            console_handler.setFormatter(
+                logging.Formatter("%(asctime)s ~ %(levelname)s - %(message)s")
+            )
+            logging.getLogger().addHandler(console_handler)
 
         logging.info("VISA Automation process started ...")
-        # Access the URL
         url = os.getenv("URL")
         visa_appointment_check(url)
 
     except Exception as e:
-        logging.info("Error occured in main function" + str(e))
+        logging.error(f"Error occurred in main function: {str(e)}", exc_info=True)
+        raise  # Re-raise the exception to mark the GitHub Action as failed
