@@ -37,3 +37,9 @@ jobs:
 
       - name: Run visa check script
         run: python visa.py
+      - name: Upload logs
+        if: always() # This ensures logs are uploaded even if the script fails
+        uses: actions/upload-artifact@v3
+        with:
+          name: visa-check-logs
+          path: logs/*.log # Adjust this path to match your log file location
