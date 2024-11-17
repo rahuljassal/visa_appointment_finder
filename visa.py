@@ -30,15 +30,21 @@ def chrome():
     chrome_options = webdriver.ChromeOptions()
     prefs = {"profile.default_content_settings.popups": 0, "directory_upgrade": True}
     chrome_options.add_experimental_option("prefs", prefs)
-    # chrome_options.add_argument('--headless')
-    # chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--ignore-certificate-errors")
     chrome_options.add_argument("--ignore-ssl-errors")
 
-    service = Service(
-        r"/Users/rahuljassal/Downloads/chromedriver-mac-arm64/chromedriver"
-    )
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+    # For GitHub Actions
+    if os.getenv("GITHUB_ACTIONS") == "true":
+        driver = webdriver.Chrome(options=chrome_options)
+    else:
+        # Local development
+        service = Service(
+            r"/Users/rahuljassal/Downloads/chromedriver-mac-arm64/chromedriver"
+        )
+        driver = webdriver.Chrome(service=service, options=chrome_options)
 
     # logging.info("Chrome launched")
     time.sleep(2)
