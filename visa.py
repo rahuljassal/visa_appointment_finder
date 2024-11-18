@@ -30,11 +30,17 @@ def chrome():
     chrome_options = webdriver.ChromeOptions()
     prefs = {"profile.default_content_settings.popups": 0, "directory_upgrade": True}
     chrome_options.add_experimental_option("prefs", prefs)
-    # chrome_options.add_argument("--headless")
+
+    # Add these options for GitHub Actions
+    chrome_options.add_argument("--headless=new")  # Updated headless mode syntax
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--ignore-certificate-errors")
     chrome_options.add_argument("--ignore-ssl-errors")
+    chrome_options.add_argument("--disable-extensions")
+    chrome_options.add_argument("--disable-software-rasterizer")
 
     # For GitHub Actions
     if os.getenv("GITHUB_ACTIONS") == "true":
@@ -46,7 +52,6 @@ def chrome():
         )
         driver = webdriver.Chrome(service=service, options=chrome_options)
 
-    # logging.info("Chrome launched")
     time.sleep(2)
     return chrome
 
