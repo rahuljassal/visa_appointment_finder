@@ -66,8 +66,15 @@ def chrome():
 # Check URL Status
 def visa_appointment_check(url):
     try:
+        if not url:
+            logging.error(
+                "URL is empty or None. Please check your environment variables."
+            )
+            return
+
+        logging.info(f"Attempting to access URL: {url}")
         chrome()
-        logging.info(str(url))
+
         try:
             driver.get(url)
             driver.maximize_window()
