@@ -27,33 +27,40 @@ load_dotenv()
 # Launch of Chrome browser
 def chrome():
     global driver
-    chrome_options = webdriver.ChromeOptions()
-    prefs = {"profile.default_content_settings.popups": 0, "directory_upgrade": True}
-    chrome_options.add_experimental_option("prefs", prefs)
+    try:
+        logging.info("Initializing Chrome options...")
+        chrome_options = webdriver.ChromeOptions()
+        prefs = {
+            "profile.default_content_settings.popups": 0,
+            "directory_upgrade": True,
+        }
+        chrome_options.add_experimental_option("prefs", prefs)
 
-    # Add these options for GitHub Actions
-    chrome_options.add_argument("--headless=new")  # Updated headless mode syntax
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--window-size=1920,1080")
-    chrome_options.add_argument("--ignore-certificate-errors")
-    chrome_options.add_argument("--ignore-ssl-errors")
-    chrome_options.add_argument("--disable-extensions")
-    chrome_options.add_argument("--disable-software-rasterizer")
+        # Add these options for GitHub Actions
+        chrome_options.add_argument("--headless=new")  # Updated headless mode syntax
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument("--ignore-certificate-errors")
+        chrome_options.add_argument("--ignore-ssl-errors")
+        chrome_options.add_argument("--disable-extensions")
+        chrome_options.add_argument("--disable-software-rasterizer")
 
-    # For GitHub Actions
-    if os.getenv("GITHUB_ACTIONS") == "true":
-        driver = webdriver.Chrome(options=chrome_options)
-    else:
-        # Local development
-        service = Service(
-            r"/Users/rahuljassal/Downloads/chromedriver-mac-arm64/chromedriver"
-        )
-        driver = webdriver.Chrome(service=service, options=chrome_options)
+        logging.info("Starting Chrome driver...")
+        if os.getenv("GITHUB_ACTIONS") == "true":
+            driver = webdriver.Chrome(options=chrome_options)
+            logging.info("Chrome driver started in GitHub Actions environment")
+        else:
+            service = Service(
+                r"/Users/rahuljassal/Downloads/chromedriver-mac-arm64/chromedriver"
+            )
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+            logging.info("Chrome driver started in local environment")
 
-    time.sleep(2)
-    return chrome
+        time.sleep(2)
+    except Exception as e:
+        logging.error(f"Error in Chrome initialization: {str(e)}", exc_info=True)
 
 
 # Check URL Status
@@ -151,11 +158,13 @@ def visa_appointment_check(url):
                     )
                 driver.quit()
             logging.info("Process exited...")
-        except:
-            pass
+        except Exception as e:
+            logging.error(f"Error in inner try block: {str(e)}", exc_info=True)
+            driver.quit()
     except Exception as err:
-        logging.info("Error in check Appointment function:" + str(err))
-    # return url_status
+        logging.error(f"Error in check Appointment function: {str(err)}", exc_info=True)
+        if "driver" in globals():
+            driver.quit()
 
 
 if __name__ == "__main__":
