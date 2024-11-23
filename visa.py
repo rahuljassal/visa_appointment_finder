@@ -24,16 +24,23 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Load environment variables from .env file
 load_dotenv()
 
-
 # Configure logging
+log_filename = f"logs/visa_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+os.makedirs("logs", exist_ok=True)
+
+# Configure logging with both file and console output
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,  # Set to DEBUG for more detailed logs
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.StreamHandler(),  # Log to console
-        logging.FileHandler("logs/visa.log"),  # Log to file
+        logging.StreamHandler(sys.stdout),  # Log to console
+        logging.FileHandler(log_filename),  # Log to file
     ],
 )
+
+# Add a startup message
+logging.info("=== Visa Appointment Check Script Started ===")
+logging.info(f"Log file: {log_filename}")
 
 
 # Launch of Chrome browser
@@ -199,20 +206,48 @@ def visa_appointment_check(url):
 
 if __name__ == "__main__":
     try:
+        # Log system information
+        logging.info(f"Python version: {sys.version}")
+        logging.info(f"Current working directory: {os.getcwd()}")
+
+        # Check if .env file exists
+        logging.info("Checking .env file...")
+        if os.path.exists(".env"):
+            logging.info(".env file found")
+        else:
+            logging.warning(".env file not found")
+
         # Add debug logging for environment variables
         logging.info("Checking environment variables:")
         env_vars = ["URL", "EMAIL", "PASSWORD", "SCHEDULE_ID", "FACILITY_ID"]
-        for var in env_vars:
-            # Log whether each variable is set (but not its value)
-            logging.info(f"{var}: {'Set' if os.getenv(var) else 'Not set'}")
+        missing_vars = []
 
-        url = os.getenv("URL")
-        if not url:
-            logging.error("URL environment variable is not set")
+        for var in env_vars:
+            value = os.getenv(var)
+            if value:
+                logging.info(f"{var}: Set (length: {len(value)} characters)")
+            else:
+                logging.error(f"{var}: Not set")
+                missing_vars.append(var)
+
+        if missing_vars:
+            logging.error(
+                f"Missing required environment variables: {', '.join(missing_vars)}"
+            )
             sys.exit(1)
 
-        visa_appointment_check(url)
+        url = os.getenv("URL")
+        logging.info("Starting visa appointment check...")
+
+        try:
+            visa_appointment_check(url)
+            logging.info("Visa appointment check completed successfully")
+        except Exception as e:
+            logging.error(f"Error in visa_appointment_check: {str(e)}", exc_info=True)
+            raise
 
     except Exception as e:
-        logging.error(f"Error occurred in main function: {str(e)}", exc_info=True)
+        logging.error(f"Fatal error in main function: {str(e)}", exc_info=True)
         raise
+    finally:
+        logging.info("=== Script Execution Completed ===")

@@ -65,8 +65,23 @@ jobs:
 
       - name: Run visa check script
         run: |
-          python visa.py
+          echo "Starting visa check script..."
+          echo "Current directory: $(pwd)"
+          echo "Python version: $(python --version)"
+          echo "Contents of current directory:"
+          ls -la
+
+          # Run the script with detailed error output
+          python -u visa.py || {
+            echo "Script failed with exit code $?"
+            echo "Contents of logs directory:"
+            ls -la logs/
+            cat logs/*.log
+            exit 1
+          }
+
           echo "Script completed"
+          echo "Contents of logs directory:"
           ls -la logs/
           cat logs/*.log
       - name: Upload logs
