@@ -221,7 +221,9 @@ def send_email_notification(available_dates):
     smtp_username = os.getenv("SMTP_USERNAME")
     smtp_password = os.getenv("SMTP_PASSWORD")
     notification_email = os.getenv("NOTIFICATION_EMAIL")
-
+    # available_dates = [
+    #     {"date": "2026-09-10", "business_day": True}
+    # ]  # for testing purpose
     if not all([smtp_server, smtp_username, smtp_password, notification_email]):
         logging.error("Missing email configuration environment variables")
         return False
@@ -231,11 +233,15 @@ def send_email_notification(available_dates):
         msg = MIMEMultipart()
         msg["From"] = smtp_username
         msg["To"] = notification_email
-        msg["Subject"] = "Visa Appointment Dates Available!"
+        msg["Subject"] = (
+            "WooHoo...Visa Appointment Dates Available!"
+            if len(available_dates)
+            else "No Visa Appointment Dates Available"
+        )
 
         # Create email body
         body = "The following visa appointment dates are available:\n\n"
-        available_dates = [{"date": "2026-09-10", "business_day": True}]
+        # available_dates = [{"date": "2026-09-10", "business_day": True}] # for testing purpose
         for date in available_dates:
             body += f"- {date["date"]}\n"
         body += "\nPlease check the visa appointment system to book your slot."
