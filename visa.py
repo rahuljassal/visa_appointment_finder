@@ -220,11 +220,19 @@ def send_email_notification(available_dates):
     smtp_port = int(os.getenv("SMTP_PORT", "587"))
     smtp_username = os.getenv("SMTP_USERNAME")
     smtp_password = os.getenv("SMTP_PASSWORD")
-    notification_email = os.getenv("NOTIFICATION_EMAIL")
-    # available_dates = [
-    #     {"date": "2026-09-10", "business_day": True}
-    # ]  # for testing purpose
-    if not all([smtp_server, smtp_username, smtp_password, notification_email]):
+
+    # Parse multiple email addresses from environment variable
+    try:
+        notification_emails = eval(os.getenv("NOTIFICATION_EMAIL", "[]"))
+        if isinstance(notification_emails, str):
+            notification_emails = [notification_emails]
+    except:
+        logging.error(
+            "Failed to parse NOTIFICATION_EMAIL. It should be a list of emails."
+        )
+        return False
+
+    if not all([smtp_server, smtp_username, smtp_password, notification_emails]):
         logging.error("Missing email configuration environment variables")
         return False
 
@@ -232,7 +240,7 @@ def send_email_notification(available_dates):
         # Create message
         msg = MIMEMultipart()
         msg["From"] = smtp_username
-        msg["To"] = notification_email
+        msg["To"] = ", ".join(notification_emails)  # Join all emails with comma
         msg["Subject"] = (
             "WooHoo...Visa Appointment Dates Available!"
             if len(available_dates)
@@ -241,9 +249,8 @@ def send_email_notification(available_dates):
 
         # Create email body
         body = "The following visa appointment dates are available:\n\n"
-        # available_dates = [{"date": "2026-09-10", "business_day": True}] # for testing purpose
         for date in available_dates:
-            body += f"- {date["date"]}\n"
+            body += f"- {date['date']}\n"
         body += "\nPlease check the visa appointment system to book your slot."
 
         msg.attach(MIMEText(body, "plain"))
@@ -252,9 +259,10 @@ def send_email_notification(available_dates):
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()
             server.login(smtp_username, smtp_password)
+            # Send to all recipients
             server.send_message(msg)
 
-        logging.info(f"Email notification sent to {notification_email}")
+        logging.info(f"Email notification sent to: {', '.join(notification_emails)}")
         return True
 
     except Exception as e:
