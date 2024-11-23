@@ -108,10 +108,10 @@ def visa_appointment_check(url):
             logging.info("Sign In Button Clicked")
 
             # Fill login form
-            driver.find_element(By.ID, "user_email").send_keys(os.getenv("email"))
+            driver.find_element(By.ID, "user_email").send_keys(os.getenv("EMAIL"))
             time.sleep(2)
             logging.info("Email enetered")
-            driver.find_element(By.ID, "user_password").send_keys(os.getenv("password"))
+            driver.find_element(By.ID, "user_password").send_keys(os.getenv("PASSWORD"))
             time.sleep(2)
             logging.info("Password entered")
             driver.find_element(
@@ -190,7 +190,7 @@ if __name__ == "__main__":
     try:
         # Add debug logging for environment variables
         logging.info("Checking environment variables:")
-        env_vars = ["URL", "email", "password", "SCHEDULE_ID", "FACILITY_ID"]
+        env_vars = ["URL", "EMAIL", "PASSWORD", "SCHEDULE_ID", "FACILITY_ID"]
         for var in env_vars:
             # Log whether each variable is set (but not its value)
             logging.info(f"{var}: {'Set' if os.getenv(var) else 'Not set'}")

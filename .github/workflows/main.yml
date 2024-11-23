@@ -45,8 +45,8 @@ jobs:
           FACILITY_ID: ${{ secrets.FACILITY_ID }}
         run: |
           echo "URL=$URL" >> .env
-          echo "email=$EMAIL" >> .env
-          echo "password=$PASSWORD" >> .env
+          echo "EMAIL=$EMAIL" >> .env
+          echo "PASSWORD=$PASSWORD" >> .env
           echo "SCHEDULE_ID=$SCHEDULE_ID" >> .env
           echo "FACILITY_ID=$FACILITY_ID" >> .env
           # Verify env file creation and content (will mask sensitive data)
@@ -58,7 +58,7 @@ jobs:
       - name: Debug Environment
         run: |
           echo "Checking if environment variables are set:"
-          printenv | grep -E "URL|email|password|SCHEDULE_ID|FACILITY_ID" | sed 's/=.*/=****/'
+          printenv | grep -E "URL|EMAIL|PASSWORD|SCHEDULE_ID|FACILITY_ID" | sed 's/=.*/=****/'
 
       - name: Run visa check script
         run: python visa.py
