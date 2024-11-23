@@ -203,6 +203,10 @@ def visa_appointment_check(url):
                     logging.info(
                         f"API call failed with status code: {response.status_code}"
                     )
+                if send_email_notification(available_dates):
+                    logging.info("Email notification sent successfully")
+                else:
+                    logging.warning("Failed to send email notification")
                 driver.quit()
             logging.info("Process exited...")
         except Exception as e:
