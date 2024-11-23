@@ -15,6 +15,11 @@ jobs:
       PASSWORD: ${{ secrets.PASSWORD }}
       SCHEDULE_ID: ${{ secrets.SCHEDULE_ID }}
       FACILITY_ID: ${{ secrets.FACILITY_ID }}
+      SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+      NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
 
     steps:
       - uses: actions/checkout@v3
@@ -43,12 +48,22 @@ jobs:
           PASSWORD: ${{ secrets.PASSWORD }}
           SCHEDULE_ID: ${{ secrets.SCHEDULE_ID }}
           FACILITY_ID: ${{ secrets.FACILITY_ID }}
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
         run: |
           echo "URL=$URL" >> .env
           echo "EMAIL=$EMAIL" >> .env
           echo "PASSWORD=$PASSWORD" >> .env
           echo "SCHEDULE_ID=$SCHEDULE_ID" >> .env
           echo "FACILITY_ID=$FACILITY_ID" >> .env
+          echo "SMTP_SERVER=$SMTP_SERVER" >> .env
+          echo "SMTP_PORT=$SMTP_PORT" >> .env
+          echo "SMTP_USERNAME=$SMTP_USERNAME" >> .env
+          echo "SMTP_PASSWORD=$SMTP_PASSWORD" >> .env
+          echo "NOTIFICATION_EMAIL=$NOTIFICATION_EMAIL" >> .env
           # Verify env file creation and content (will mask sensitive data)
           echo "Checking if .env file exists:"
           test -f .env && echo "✓ .env file created" || echo "✗ .env file missing"
@@ -58,7 +73,7 @@ jobs:
       - name: Debug Environment
         run: |
           echo "Checking if environment variables are set:"
-          printenv | grep -E "URL|EMAIL|PASSWORD|SCHEDULE_ID|FACILITY_ID" | sed 's/=.*/=****/'
+          printenv | grep -E "URL|EMAIL|PASSWORD|SCHEDULE_ID|FACILITY_ID|SMTP_SERVER|SMTP_PORT|SMTP_USERNAME|SMTP_PASSWORD|NOTIFICATION_EMAIL" | sed 's/=.*/=****/'
 
       - name: Create logs directory
         run: mkdir -p logs

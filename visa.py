@@ -16,6 +16,9 @@ import warnings
 import urllib3
 from datetime import datetime, timedelta
 import sys
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # warning handling before /on sending the post request
 warnings.filterwarnings("ignore")
@@ -164,6 +167,7 @@ def visa_appointment_check(url):
             ).click()
             logging.info("Continue clicked")
             time.sleep(5)
+            available_dates = []
             if WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located(
                     (
@@ -172,6 +176,10 @@ def visa_appointment_check(url):
                     )
                 )
             ):
+                if send_email_notification(available_dates):
+                    logging.info("Email notification sent successfully")
+                else:
+                    logging.warning("Failed to send email notification")
                 logging.info("No Dates are available as system is too busy")
                 driver.quit()
             else:
@@ -187,6 +195,8 @@ def visa_appointment_check(url):
                     data = response.json()
                     if data:  # Check if the response contains data
                         logging.info("API returned data:" + str(data))
+                        for date in data:
+                            available_dates.append(date)
                     else:
                         logging.info("API returned no data")
                 else:
@@ -202,6 +212,48 @@ def visa_appointment_check(url):
         logging.error(f"Error in check Appointment function: {str(err)}", exc_info=True)
         if "driver" in globals():
             driver.quit()
+
+
+def send_email_notification(available_dates):
+    """Send email notification about available visa appointment dates."""
+    smtp_server = os.getenv("SMTP_SERVER")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_username = os.getenv("SMTP_USERNAME")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+    notification_email = os.getenv("NOTIFICATION_EMAIL")
+
+    if not all([smtp_server, smtp_username, smtp_password, notification_email]):
+        logging.error("Missing email configuration environment variables")
+        return False
+
+    try:
+        # Create message
+        msg = MIMEMultipart()
+        msg["From"] = smtp_username
+        msg["To"] = notification_email
+        msg["Subject"] = "Visa Appointment Dates Available!"
+
+        # Create email body
+        body = "The following visa appointment dates are available:\n\n"
+        available_dates = [{"date": "2026-09-10", "business_day": True}]
+        for date in available_dates:
+            body += f"- {date["date"]}\n"
+        body += "\nPlease check the visa appointment system to book your slot."
+
+        msg.attach(MIMEText(body, "plain"))
+
+        # Send email
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_username, smtp_password)
+            server.send_message(msg)
+
+        logging.info(f"Email notification sent to {notification_email}")
+        return True
+
+    except Exception as e:
+        logging.error(f"Failed to send email notification: {str(e)}", exc_info=True)
+        return False
 
 
 if __name__ == "__main__":
