@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 import warnings
 import urllib3
 from datetime import datetime, timedelta
+import sys
 
 # warning handling before /on sending the post request
 warnings.filterwarnings("ignore")
@@ -187,40 +188,20 @@ def visa_appointment_check(url):
 
 if __name__ == "__main__":
     try:
-        # Get the current date
-        now = datetime.now()
-        date_obj = datetime.strftime(now, "%d-%b-%Y")
-        Today_date = datetime.strptime(date_obj, "%d-%b-%Y").date()
-        urllib3.disable_warnings()
-        filedate = str(Today_date)
+        # Add debug logging for environment variables
+        logging.info("Checking environment variables:")
+        env_vars = ["URL", "email", "password", "SCHEDULE_ID", "FACILITY_ID"]
+        for var in env_vars:
+            # Log whether each variable is set (but not its value)
+            logging.info(f"{var}: {'Set' if os.getenv(var) else 'Not set'}")
 
-        # Define the file path
-        log_dir = "logs"
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
-
-        file_path = os.path.join(log_dir, f"Visa_Automation_{filedate}.log")
-
-        # Basic Configuration for Logging
-        logging.basicConfig(
-            filename=file_path,
-            format="%(asctime)s ~ %(levelname)s - %(message)s",
-            datefmt="%d-%b-%Y %H:%M:%S",
-            level=logging.INFO,
-        )
-
-        # Also log to console when running in GitHub Actions
-        if os.getenv("GITHUB_ACTIONS") == "true":
-            console_handler = logging.StreamHandler()
-            console_handler.setFormatter(
-                logging.Formatter("%(asctime)s ~ %(levelname)s - %(message)s")
-            )
-            logging.getLogger().addHandler(console_handler)
-
-        logging.info("VISA Automation process started ...")
         url = os.getenv("URL")
+        if not url:
+            logging.error("URL environment variable is not set")
+            sys.exit(1)
+
         visa_appointment_check(url)
 
     except Exception as e:
         logging.error(f"Error occurred in main function: {str(e)}", exc_info=True)
-        raise  # Re-raise the exception to mark the GitHub Action as failed
+        raise
