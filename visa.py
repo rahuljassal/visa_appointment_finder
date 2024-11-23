@@ -45,6 +45,16 @@ logging.basicConfig(
 logging.info("=== Visa Appointment Check Script Started ===")
 logging.info(f"Log file: {log_filename}")
 
+faculties = [
+    {"faculty": "Calgary", "faculty_id": "89"},
+    {"faculty": "Halifax", "faculty_id": "90"},
+    {"faculty": "Montreal", "faculty_id": "91"},
+    {"faculty": "Ottawa", "faculty_id": "92"},
+    {"faculty": "Quebec", "faculty_id": "93"},
+    {"faculty": "Toronto", "faculty_id": "94"},
+    {"faculty": "Vancouver", "faculty_id": "95"},
+]
+
 
 # Launch of Chrome browser
 def chrome():
@@ -167,7 +177,7 @@ def visa_appointment_check(url):
             ).click()
             logging.info("Continue clicked")
             time.sleep(5)
-            available_dates = []
+            available_dates = {}
             if WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located(
                     (
@@ -185,24 +195,52 @@ def visa_appointment_check(url):
             else:
                 logging.info("Wohooo....Appointment Dates are available")
                 # Make an API call to check for data
-                # api_url = os.getenv("appointment_url")
+                URL = os.getenv("URL")
                 SCHEDULE_ID = os.getenv("SCHEDULE_ID")
-                FACILITY_ID = os.getenv("FACILITY_ID")
-                api_url = f"https://ais.usvisa-info.com/en-ca/niv/schedule/{SCHEDULE_ID}/appointment/days/{FACILITY_ID}.json?appointments[expedite]=false"
-                response = requests.get(api_url)
+                for faculty in faculties:
+                    FACILITY_ID = faculty["faculty_id"]
+                    FACULTY = faculty["faculty"]
 
-                if response.status_code == 200:
-                    data = response.json()
-                    if data:  # Check if the response contains data
-                        logging.info("API returned data:" + str(data))
-                        for date in data:
-                            available_dates.append(date)
-                    else:
-                        logging.info("API returned no data")
-                else:
-                    logging.info(
-                        f"API call failed with status code: {response.status_code}"
+                    URL = f"{URL}/schedule/{SCHEDULE_ID}/appointment/days/{FACILITY_ID}.json?appointments[expedite]=false"
+                    # Get cookies from selenium session
+                    cookies = driver.get_cookies()
+                    cookie_dict = {
+                        cookie["name"]: cookie["value"] for cookie in cookies
+                    }
+
+                    # Create headers similar to browser
+                    headers = {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                        "Accept": "application/json, text/javascript, */*; q=0.01",
+                        "Accept-Language": "en-US,en;q=0.9",
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Referer": url,
+                    }
+
+                    # Make request with cookies and headers
+                    response = requests.get(
+                        URL,
+                        cookies=cookie_dict,
+                        headers=headers,
+                        verify=False,  # Since you're already ignoring SSL
                     )
+
+                    if response.status_code == 200:
+                        data = response.json()
+                        if data:  # Check if the response contains data
+                            logging.info("API returned data:" + str(data))
+                            for date in data:
+                                if FACULTY not in available_dates:
+                                    available_dates[FACULTY] = []
+                                available_dates[FACULTY].append(date["date"])
+                        else:
+                            logging.info(
+                                f"{FACULTY}-{FACILITY_ID}-API returned no data "
+                            )
+                    else:
+                        logging.info(
+                            f"API call failed with status code: {response.status_code}"
+                        )
                 if send_email_notification(available_dates):
                     logging.info("Email notification sent successfully")
                 else:
@@ -253,8 +291,8 @@ def send_email_notification(available_dates):
 
         # Create email body
         body = "The following visa appointment dates are available:\n\n"
-        for date in available_dates:
-            body += f"- {date['date']}\n"
+        for faculty in available_dates.keys():
+            body += f"{faculty}: {str(available_dates[faculty])}\n"
         body += "\nPlease check the visa appointment system to book your slot."
 
         msg.attach(MIMEText(body, "plain"))
