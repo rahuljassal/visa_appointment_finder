@@ -36,9 +36,16 @@ jobs:
           echo "password=${{ secrets.PASSWORD }}" >> .env
           echo "SCHEDULE_ID=${{ secrets.SCHEDULE_ID }}" >> .env
           echo "FACILITY_ID=${{ secrets.FACILITY_ID }}" >> .env
-          # Verify env file creation (will mask sensitive data)
+          # Verify env file creation and content (will mask sensitive data)
           echo "Checking if .env file exists:"
           test -f .env && echo "✓ .env file created" || echo "✗ .env file missing"
+          echo "Checking .env file contents (secrets will be masked):"
+          cat .env | sed 's/=.*/=****/'
+
+      - name: Debug Environment
+        run: |
+          echo "Checking if environment variables are set:"
+          printenv | grep -E "URL|email|password|SCHEDULE_ID|FACILITY_ID" | sed 's/=.*/=****/'
 
       - name: Run visa check script
         run: python visa.py
