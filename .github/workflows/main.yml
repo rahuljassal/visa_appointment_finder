@@ -8,7 +8,7 @@ on:
 jobs:
   check-appointment:
     runs-on: ubuntu-latest
-    # environment: Development
+    environment: visa_keys
     env:
       URL: ${{ secrets.URL }}
       EMAIL: ${{ secrets.EMAIL }}
