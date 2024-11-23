@@ -36,31 +36,42 @@ def chrome():
         }
         chrome_options.add_experimental_option("prefs", prefs)
 
-        # Add these options for GitHub Actions
-        chrome_options.add_argument("--headless=new")  # Updated headless mode syntax
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-gpu")
+        # Common options for both environments
         chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument("--start-maximized")
         chrome_options.add_argument("--ignore-certificate-errors")
         chrome_options.add_argument("--ignore-ssl-errors")
         chrome_options.add_argument("--disable-extensions")
-        chrome_options.add_argument("--disable-software-rasterizer")
+        chrome_options.add_argument(
+            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+        )
+        chrome_options.page_load_strategy = "normal"
 
-        logging.info("Starting Chrome driver...")
+        # GitHub Actions specific options
         if os.getenv("GITHUB_ACTIONS") == "true":
+            logging.info("Setting up Chrome for GitHub Actions (headless)...")
+            chrome_options.add_argument("--headless=new")
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            chrome_options.add_argument("--disable-gpu")
+            chrome_options.add_argument("--disable-software-rasterizer")
             driver = webdriver.Chrome(options=chrome_options)
             logging.info("Chrome driver started in GitHub Actions environment")
         else:
+            logging.info("Setting up Chrome for local environment (headed)...")
             service = Service(
                 r"/Users/rahuljassal/Downloads/chromedriver-mac-arm64/chromedriver"
             )
             driver = webdriver.Chrome(service=service, options=chrome_options)
             logging.info("Chrome driver started in local environment")
 
+        # Add additional wait for page load
+        driver.implicitly_wait(10)
         time.sleep(2)
+
     except Exception as e:
         logging.error(f"Error in Chrome initialization: {str(e)}", exc_info=True)
+        raise
 
 
 # Check URL Status
