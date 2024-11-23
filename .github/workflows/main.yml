@@ -60,8 +60,15 @@ jobs:
           echo "Checking if environment variables are set:"
           printenv | grep -E "URL|EMAIL|PASSWORD|SCHEDULE_ID|FACILITY_ID" | sed 's/=.*/=****/'
 
+      - name: Create logs directory
+        run: mkdir -p logs
+
       - name: Run visa check script
-        run: python visa.py
+        run: |
+          python visa.py
+          echo "Script completed"
+          ls -la logs/
+          cat logs/*.log
       - name: Upload logs
         if: always() # This ensures logs are uploaded even if the script fails
         uses: actions/upload-artifact@v3
