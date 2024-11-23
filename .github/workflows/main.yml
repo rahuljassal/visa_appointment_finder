@@ -2,12 +2,19 @@ name: Visa Appointment Check
 
 on:
   # schedule:
-  # - cron: "*/5 * * * *" # Runs every 15 minutes
+  # - cron: "*/5 * * * *" # Runs every 5 minutes
   workflow_dispatch: # Allows manual trigger
 
 jobs:
   check-appointment:
     runs-on: ubuntu-latest
+    # environment: Development
+    env:
+      URL: ${{ secrets.URL }}
+      EMAIL: ${{ secrets.EMAIL }}
+      PASSWORD: ${{ secrets.PASSWORD }}
+      SCHEDULE_ID: ${{ secrets.SCHEDULE_ID }}
+      FACILITY_ID: ${{ secrets.FACILITY_ID }}
 
     steps:
       - uses: actions/checkout@v3
@@ -30,12 +37,18 @@ jobs:
           pip install -r requirements.txt
 
       - name: Create env file
+        env:
+          URL: ${{ secrets.URL }}
+          EMAIL: ${{ secrets.EMAIL }}
+          PASSWORD: ${{ secrets.PASSWORD }}
+          SCHEDULE_ID: ${{ secrets.SCHEDULE_ID }}
+          FACILITY_ID: ${{ secrets.FACILITY_ID }}
         run: |
-          echo "URL=${{ secrets.URL }}" >> .env
-          echo "email=${{ secrets.EMAIL }}" >> .env
-          echo "password=${{ secrets.PASSWORD }}" >> .env
-          echo "SCHEDULE_ID=${{ secrets.SCHEDULE_ID }}" >> .env
-          echo "FACILITY_ID=${{ secrets.FACILITY_ID }}" >> .env
+          echo "URL=$URL" >> .env
+          echo "email=$EMAIL" >> .env
+          echo "password=$PASSWORD" >> .env
+          echo "SCHEDULE_ID=$SCHEDULE_ID" >> .env
+          echo "FACILITY_ID=$FACILITY_ID" >> .env
           # Verify env file creation and content (will mask sensitive data)
           echo "Checking if .env file exists:"
           test -f .env && echo "✓ .env file created" || echo "✗ .env file missing"
