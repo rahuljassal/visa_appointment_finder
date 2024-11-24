@@ -186,10 +186,10 @@ def visa_appointment_check(url):
                     )
                 )
             ):
-                if send_email_notification(available_dates):
-                    logging.info("Email notification sent successfully")
-                else:
-                    logging.warning("Failed to send email notification")
+                # if send_email_notification(available_dates):
+                #     logging.info("Email notification sent successfully")
+                # else:
+                #     logging.warning("Failed to send email notification")
                 logging.info("No Dates are available as system is too busy")
                 driver.quit()
             else:
