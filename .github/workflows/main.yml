@@ -2,7 +2,7 @@ name: Visa Appointment Check
 
 on:
   schedule:
-    - cron: "0 *  * * *" # Runs Every hour, checking the date timing then will narrow donw the time range
+    - cron: "*/10 10-14 * * *" # Runs Every 10 minutes, between 10:00 AM and 02:59 PM
   workflow_dispatch: # Allows manual trigger
 
 jobs:

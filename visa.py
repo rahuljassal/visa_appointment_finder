@@ -99,7 +99,7 @@ def chrome():
 
         # Add additional wait for page load
         driver.implicitly_wait(10)
-        time.sleep(2)
+        # #time.sleep(2)
 
     except Exception as e:
         logging.error(f"Error in Chrome initialization: {str(e)}", exc_info=True)
@@ -127,133 +127,117 @@ def visa_appointment_check(url):
                 cookie_button = WebDriverWait(url, 5).until(
                     EC.presence_of_element_located((By.ID, "accept-cookies"))
                 )
-                time.sleep(2)
+                # #time.sleep(2)
                 cookie_button.click()
                 logging.info("cookie button clicked")
             except:
                 pass
             # Click sign in
             sign_in = driver.find_element(By.LINK_TEXT, "Sign In")
-            time.sleep(2)
+            # time.sleep(2)
             sign_in.click()
             logging.info("Sign In Button Clicked")
 
             # Fill login form
             driver.find_element(By.ID, "user_email").send_keys(os.getenv("EMAIL"))
-            time.sleep(2)
+            # time.sleep(2)
             logging.info("Email enetered")
             driver.find_element(By.ID, "user_password").send_keys(os.getenv("PASSWORD"))
-            time.sleep(2)
+            # time.sleep(2)
             logging.info("Password entered")
             driver.find_element(
                 By.XPATH,
                 "/html/body/div[5]/main/div[3]/div/div[1]/div/form/div[3]/label/div",
             ).click()
-            time.sleep(2)
+            # time.sleep(2)
             logging.info("Checkbox ticked")
             driver.find_element(By.NAME, "commit").click()
-            time.sleep(2)
+            # time.sleep(2)
             logging.info("Sign In Button Clicked")
             driver.find_element(
                 By.XPATH,
                 "/html/body/div[4]/main/div[2]/div[2]/div[1]/div/div/div[1]/div[2]/ul/li",
             ).click()
             logging.info("Continue clicked")
-            time.sleep(5)
+            # time.sleep(5)
             driver.find_element(
                 By.XPATH,
                 "/html/body/div[4]/main/div[2]/div[2]/div/section/ul/li[4]/a/h5",
             ).click()
-            time.sleep(2)
+            # time.sleep(2)
             logging.info("Reschedule app 1 clicked")
             driver.find_element(
                 By.XPATH,
                 "/html/body/div[4]/main/div[2]/div[2]/div/section/ul/li[4]/div/div/div[2]/p[2]/a",
             ).click()
             logging.info("Reschedule app 2 clicked")
-            time.sleep(2)
+            # time.sleep(2)
             driver.find_element(
                 By.XPATH, "/html/body/div[4]/main/div[3]/form/div[2]/div/input"
             ).click()
             logging.info("Continue clicked")
-            time.sleep(5)
+            # time.sleep(5)
             available_dates = {}
-            if WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located(
-                    (
-                        By.XPATH,
-                        "/html/body/div[4]/main/div[4]/div/div/form/fieldset/ol/fieldset/div/div[2]/div[2]/small",
-                    )
+            # Make an API call to check for data
+            URL = os.getenv("URL")
+            SCHEDULE_ID = os.getenv("SCHEDULE_ID")
+            for faculty in faculties:
+                FACILITY_ID = faculty["faculty_id"]
+                FACULTY = faculty["faculty"]
+
+                URL = f"{URL}/schedule/{SCHEDULE_ID}/appointment/days/{FACILITY_ID}.json?appointments[expedite]=false"
+                # Get cookies from selenium session
+                cookies = driver.get_cookies()
+                cookie_dict = {cookie["name"]: cookie["value"] for cookie in cookies}
+
+                # Create headers similar to browser
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                    "Accept": "application/json, text/javascript, */*; q=0.01",
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Referer": url,
+                }
+
+                # Make request with cookies and headers
+                response = requests.get(
+                    URL,
+                    cookies=cookie_dict,
+                    headers=headers,
+                    verify=False,  # Since you're already ignoring SSL
                 )
-            ):
-                # if send_email_notification(available_dates):
-                #     logging.info("Email notification sent successfully")
-                # else:
-                #     logging.warning("Failed to send email notification")
-                logging.info("No Dates are available as system is too busy")
-                driver.quit()
-            else:
-                logging.info("Wohooo....Appointment Dates are available")
-                # Make an API call to check for data
-                URL = os.getenv("URL")
-                SCHEDULE_ID = os.getenv("SCHEDULE_ID")
-                for faculty in faculties:
-                    FACILITY_ID = faculty["faculty_id"]
-                    FACULTY = faculty["faculty"]
 
-                    URL = f"{URL}/schedule/{SCHEDULE_ID}/appointment/days/{FACILITY_ID}.json?appointments[expedite]=false"
-                    # Get cookies from selenium session
-                    cookies = driver.get_cookies()
-                    cookie_dict = {
-                        cookie["name"]: cookie["value"] for cookie in cookies
-                    }
-
-                    # Create headers similar to browser
-                    headers = {
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-                        "Accept": "application/json, text/javascript, */*; q=0.01",
-                        "Accept-Language": "en-US,en;q=0.9",
-                        "X-Requested-With": "XMLHttpRequest",
-                        "Referer": url,
-                    }
-
-                    # Make request with cookies and headers
-                    response = requests.get(
-                        URL,
-                        cookies=cookie_dict,
-                        headers=headers,
-                        verify=False,  # Since you're already ignoring SSL
-                    )
-
-                    if response.status_code == 200:
-                        data = response.json()
-                        if data:  # Check if the response contains data
-                            logging.info("API returned data:" + str(data))
-                            for date in data:
-                                if FACULTY not in available_dates:
-                                    available_dates[FACULTY] = []
-                                available_dates[FACULTY].append(date["date"])
-                        else:
-                            logging.info(
-                                f"{FACULTY}-{FACILITY_ID}-API returned no data "
-                            )
+                if response.status_code == 200:
+                    data = response.json()
+                    if data:  # Check if the response contains data
+                        logging.info("API returned data:" + str(data))
+                        for date in data:
+                            if FACULTY not in available_dates:
+                                available_dates[FACULTY] = []
+                            available_dates[FACULTY].append(date["date"])
                     else:
-                        logging.info(
-                            f"API call failed with status code: {response.status_code}"
-                        )
+                        logging.info(f"{FACULTY}-{FACILITY_ID}-API returned no data ")
+                else:
+                    logging.info(
+                        f"API call failed with status code: {response.status_code}"
+                    )
+            if len(available_dates.keys()):
                 if send_email_notification(available_dates):
-                    logging.info("Email notification sent successfully")
+                    logging.info("Entering the email function")
                 else:
                     logging.warning("Failed to send email notification")
-                driver.quit()
-            logging.info("Process exited...")
+            else:
+                logging.info("No Dates Available")
+            driver.quit()
         except Exception as e:
             logging.error(f"Error in inner try block: {str(e)}", exc_info=True)
             driver.quit()
-    except Exception as err:
-        logging.error(f"Error in check Appointment function: {str(err)}", exc_info=True)
-        if "driver" in globals():
-            driver.quit()
+
+        logging.info("Process exited...")
+
+    except Exception as e:
+        logging.error(f"Error in inner try block: {str(e)}", exc_info=True)
+        driver.quit()
 
 
 def send_email_notification(available_dates):
@@ -285,7 +269,7 @@ def send_email_notification(available_dates):
         msg["To"] = ", ".join(notification_emails)  # Join all emails with comma
         msg["Subject"] = (
             "WooHoo...Visa Appointment Dates Available!"
-            if len(available_dates)
+            if len(available_dates.keys())
             else "No Visa Appointment Dates Available"
         )
 
