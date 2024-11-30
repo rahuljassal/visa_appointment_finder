@@ -177,51 +177,46 @@ def visa_appointment_check(url):
             ).click()
             logging.info("Continue clicked")
             # time.sleep(5)
-            available_dates = {}
+            available_dates = []
             # Make an API call to check for data
             URL = os.getenv("URL")
             SCHEDULE_ID = os.getenv("SCHEDULE_ID")
-            for faculty in faculties:
-                FACILITY_ID = faculty["faculty_id"]
-                FACULTY = faculty["faculty"]
+            FACILITY_ID = os.getenv("FACILITY_ID")
+            URL = f"{URL}/schedule/{SCHEDULE_ID}/appointment/days/{FACILITY_ID}.json?appointments[expedite]=false"
+            # Get cookies from selenium session
+            cookies = driver.get_cookies()
+            cookie_dict = {cookie["name"]: cookie["value"] for cookie in cookies}
 
-                URL = f"{URL}/schedule/{SCHEDULE_ID}/appointment/days/{FACILITY_ID}.json?appointments[expedite]=false"
-                # Get cookies from selenium session
-                cookies = driver.get_cookies()
-                cookie_dict = {cookie["name"]: cookie["value"] for cookie in cookies}
+            # Create headers similar to browser
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                "Accept": "application/json, text/javascript, */*; q=0.01",
+                "Accept-Language": "en-US,en;q=0.9",
+                "X-Requested-With": "XMLHttpRequest",
+                "Referer": url,
+            }
 
-                # Create headers similar to browser
-                headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-                    "Accept": "application/json, text/javascript, */*; q=0.01",
-                    "Accept-Language": "en-US,en;q=0.9",
-                    "X-Requested-With": "XMLHttpRequest",
-                    "Referer": url,
-                }
+            # Make request with cookies and headers
+            response = requests.get(
+                URL,
+                cookies=cookie_dict,
+                headers=headers,
+                verify=False,  # Since you're already ignoring SSL
+            )
 
-                # Make request with cookies and headers
-                response = requests.get(
-                    URL,
-                    cookies=cookie_dict,
-                    headers=headers,
-                    verify=False,  # Since you're already ignoring SSL
-                )
-
-                if response.status_code == 200:
-                    data = response.json()
-                    if data:  # Check if the response contains data
-                        logging.info("API returned data:" + str(data))
-                        for date in data:
-                            if FACULTY not in available_dates:
-                                available_dates[FACULTY] = []
-                            available_dates[FACULTY].append(date["date"])
-                    else:
-                        logging.info(f"{FACULTY}-{FACILITY_ID}-API returned no data ")
+            if response.status_code == 200:
+                data = response.json()
+                if data:  # Check if the response contains data
+                    logging.info("API returned data:" + str(data))
+                    for date in data:
+                        available_dates.append(date["date"])
                 else:
-                    logging.info(
-                        f"API call failed with status code: {response.status_code}"
-                    )
-            if len(available_dates.keys()):
+                    logging.info(f"{FACILITY_ID}-API returned no data ")
+            else:
+                logging.info(
+                    f"API call failed with status code: {response.status_code}"
+                )
+            if len(available_dates):
                 if send_email_notification(available_dates):
                     logging.info("Entering the email function")
                 else:
@@ -269,14 +264,14 @@ def send_email_notification(available_dates):
         msg["To"] = ", ".join(notification_emails)  # Join all emails with comma
         msg["Subject"] = (
             "WooHoo...Visa Appointment Dates Available!"
-            if len(available_dates.keys())
+            if len(available_dates)
             else "No Visa Appointment Dates Available"
         )
 
         # Create email body
         body = "The following visa appointment dates are available:\n\n"
-        for faculty in available_dates.keys():
-            body += f"{faculty}: {str(available_dates[faculty])}\n"
+        for date in available_dates:
+            body += f"{date}\n"
         body += "\nPlease check the visa appointment system to book your slot."
 
         msg.attach(MIMEText(body, "plain"))
