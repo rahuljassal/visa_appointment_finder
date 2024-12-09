@@ -14,6 +14,7 @@ import os
 from dotenv import load_dotenv
 import warnings
 import urllib3
+import re
 from datetime import datetime, timedelta
 import sys
 import smtplib
@@ -54,6 +55,56 @@ faculties = [
     {"faculty": "Toronto", "faculty_id": "94"},
     {"faculty": "Vancouver", "faculty_id": "95"},
 ]
+
+
+# extract dates from ui
+def extract_dates(sentence):
+    """
+    Extracts dates from a sentence and converts them to yyyy-mm-dd format.
+
+    :param sentence: The input sentence containing dates.
+    :return: A list of dates in yyyy-mm-dd format.
+    """
+    # Regex patterns for different date formats
+    patterns = [
+        r"\d{1,2} [A-Za-z]+, \d{4}",  # Matches dates like '24 February, 2026'
+        r"\d{4}-\d{2}-\d{2}",  # Matches dates like '2026-07-14'
+    ]
+
+    dates = []
+
+    for pattern in patterns:
+        matches = re.findall(pattern, sentence)
+        for match in matches:
+            try:
+                # Convert to datetime and then to yyyy-mm-dd format
+                if "," in match:  # Handle '24 February, 2026'
+                    dt = datetime.strptime(match, "%d %B, %Y")
+                else:  # Handle '2026-07-14'
+                    dt = datetime.strptime(match, "%Y-%m-%d")
+                dates.append(dt.strftime("%Y-%m-%d"))
+            except ValueError:
+                pass  # Skip invalid matches
+
+    return dates
+
+
+def is_available_date_before(current_appointment_date, available_date):
+    """
+    Checks if the available date is before the current_appointment date.
+
+    :param current_appointment_date: The current_appointment date in yyyy-mm-dd format.
+    :param available_date: The available date in yyyy-mm-dd format.
+    :return: True if the available date is before the current_appointment date, False otherwise.
+    """
+    # Parse the dates
+    current_appointment_date_obj = datetime.strptime(
+        current_appointment_date, "%Y-%m-%d"
+    )
+    available_date_obj = datetime.strptime(available_date, "%Y-%m-%d")
+
+    # Compare the dates
+    return available_date_obj < current_appointment_date_obj
 
 
 # Launch of Chrome browser
@@ -154,6 +205,13 @@ def visa_appointment_check(url):
             driver.find_element(By.NAME, "commit").click()
             # time.sleep(2)
             logging.info("Sign In Button Clicked")
+            current_appointment = driver.find_element(
+                By.XPATH,
+                "/html/body/div[4]/main/div[2]/div[2]/div[1]/div/div/div[2]/p[1]",
+            ).text
+            current_appointment_dates = extract_dates(current_appointment)
+            logging.info(f"Current appointment date {current_appointment_dates}")
+
             driver.find_element(
                 By.XPATH,
                 "/html/body/div[4]/main/div[2]/div[2]/div[1]/div/div/div[1]/div[2]/ul/li",
@@ -176,7 +234,7 @@ def visa_appointment_check(url):
                 By.XPATH, "/html/body/div[4]/main/div[3]/form/div[2]/div/input"
             ).click()
             logging.info("Continue clicked")
-            # time.sleep(5)
+            time.sleep(5)
             available_dates = []
             # Make an API call to check for data
             URL = os.getenv("URL")
@@ -217,10 +275,21 @@ def visa_appointment_check(url):
                     f"API call failed with status code: {response.status_code}"
                 )
             if len(available_dates):
-                if send_email_notification(available_dates):
-                    logging.info("Entering the email function")
+                early_date_flag = is_available_date_before(
+                    current_appointment_dates[0], available_dates[0]
+                )
+                if early_date_flag:
+                    if send_email_notification(available_dates):
+                        logging.info("Entering the email function")
+                    else:
+                        logging.warning("Failed to send email notification")
                 else:
-                    logging.warning("Failed to send email notification")
+                    logging.info(
+                        f"current date: {current_appointment_dates[0]}, earliest date available: { available_dates[0]}"
+                    )
+                    logging.info(
+                        "Early dates are not available, will try again after 15 mins"
+                    )
             else:
                 logging.info("No Dates Available")
             driver.quit()
