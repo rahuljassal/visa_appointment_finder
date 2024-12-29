@@ -158,7 +158,7 @@ def chrome():
 
 
 # Check URL Status
-def visa_appointment_check(url):
+def visa_appointment_check(url, email, password, schedule_id, facility_id):
     try:
         if not url:
             logging.error(
@@ -190,10 +190,12 @@ def visa_appointment_check(url):
             logging.info("Sign In Button Clicked")
 
             # Fill login form
-            driver.find_element(By.ID, "user_email").send_keys(os.getenv("EMAIL"))
+            driver.find_element(By.ID, "user_email").send_keys(email)
+
             # time.sleep(2)
             logging.info("Email enetered")
-            driver.find_element(By.ID, "user_password").send_keys(os.getenv("PASSWORD"))
+            driver.find_element(By.ID, "user_password").send_keys(password)
+
             # time.sleep(2)
             logging.info("Password entered")
             driver.find_element(
@@ -229,18 +231,16 @@ def visa_appointment_check(url):
                 "/html/body/div[4]/main/div[2]/div[2]/div/section/ul/li[4]/div/div/div[2]/p[2]/a",
             ).click()
             logging.info("Reschedule app 2 clicked")
-            # time.sleep(2)
-            driver.find_element(
-                By.XPATH, "/html/body/div[4]/main/div[3]/form/div[2]/div/input"
-            ).click()
-            logging.info("Continue clicked")
+            time.sleep(2)
+            # driver.find_element(
+            #     By.XPATH, "/html/body/div[4]/main/div[3]/form/div[2]/div/input"
+            # ).click()
+            # logging.info("Continue clicked")
             time.sleep(5)
             available_dates = []
             # Make an API call to check for data
             URL = os.getenv("URL")
-            SCHEDULE_ID = os.getenv("SCHEDULE_ID")
-            FACILITY_ID = os.getenv("FACILITY_ID")
-            URL = f"{URL}/schedule/{SCHEDULE_ID}/appointment/days/{FACILITY_ID}.json?appointments[expedite]=false"
+            URL = f"{URL}/schedule/{schedule_id}/appointment/days/{facility_id}.json?appointments[expedite]=false"
             # Get cookies from selenium session
             cookies = driver.get_cookies()
             cookie_dict = {cookie["name"]: cookie["value"] for cookie in cookies}
@@ -269,7 +269,7 @@ def visa_appointment_check(url):
                     for date in data:
                         available_dates.append(date["date"])
                 else:
-                    logging.info(f"{FACILITY_ID}-API returned no data ")
+                    logging.info(f"{facility_id}-API returned no data ")
             else:
                 logging.info(
                     f"API call failed with status code: {response.status_code}"
@@ -279,13 +279,13 @@ def visa_appointment_check(url):
                     current_appointment_dates[0], available_dates[0]
                 )
                 if early_date_flag:
-                    if send_email_notification(available_dates):
+                    if send_email_notification(available_dates, email):
                         logging.info("Entering the email function")
                     else:
                         logging.warning("Failed to send email notification")
                 else:
                     logging.info(
-                        f"current date: {current_appointment_dates[0]}, earliest date available: { available_dates[0]}"
+                        f"for {email} current date: {current_appointment_dates[0]}, earliest date available: { available_dates[0]}"
                     )
                     logging.info(
                         "Early dates are not available, will try again after 15 mins"
@@ -304,7 +304,7 @@ def visa_appointment_check(url):
         driver.quit()
 
 
-def send_email_notification(available_dates):
+def send_email_notification(available_dates, email):
     """Send email notification about available visa appointment dates."""
     smtp_server = os.getenv("SMTP_SERVER")
     smtp_port = int(os.getenv("SMTP_PORT", "587"))
@@ -332,7 +332,7 @@ def send_email_notification(available_dates):
         msg["From"] = smtp_username
         msg["To"] = ", ".join(notification_emails)  # Join all emails with comma
         msg["Subject"] = (
-            "WooHoo...Visa Appointment Dates Available!"
+            f"{email} ||  WooHoo...Visa Appointment Dates Available!"
             if len(available_dates)
             else "No Visa Appointment Dates Available"
         )
@@ -396,8 +396,22 @@ if __name__ == "__main__":
         logging.info("Starting visa appointment check...")
 
         try:
-            visa_appointment_check(url)
-            logging.info("Visa appointment check completed successfully")
+
+            def stringToArrayConverter(string):
+                return string.strip("[]").split(",")
+
+            EMAIL = stringToArrayConverter(os.getenv("EMAIL", "[]"))
+            SCHEDULE_ID = stringToArrayConverter(os.getenv("SCHEDULE_ID", "[]"))
+            FACILITY_ID = stringToArrayConverter(os.getenv("FACILITY_ID", "[]"))
+            PASSWORD = stringToArrayConverter(os.getenv("PASSWORD", "[]"))
+            for i in range(0, len(PASSWORD)):
+
+                visa_appointment_check(
+                    url, EMAIL[i], PASSWORD[i], SCHEDULE_ID[i], FACILITY_ID[i]
+                )
+                logging.info(
+                    f"Visa appointment check for {EMAIL[i]} completed successfully"
+                )
         except Exception as e:
             logging.error(f"Error in visa_appointment_check: {str(e)}", exc_info=True)
             raise
